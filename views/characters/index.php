@@ -12,7 +12,10 @@
 
             <div class="card-body">
                 <h3><?= htmlspecialchars($char['name']) ?></h3>
-                <p><?= htmlspecialchars(substr($char['description'], 0, 100)) ?>...</p>
+                <p
+                    style="display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; text-overflow: ellipsis; height: 3em; line-height: 1.5em; margin-bottom: 15px;">
+                    <?= htmlspecialchars($char['description']) ?>
+                </p>
                 <a href="<?= BASE_URL ?>/character?id=<?= $char['id'] ?>" class="btn"
                     style="width:100%; text-align:center; box-sizing:border-box;">View Skills</a>
             </div>

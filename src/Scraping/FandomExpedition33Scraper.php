@@ -19,7 +19,7 @@ class FandomExpedition33Scraper implements ScraperInterface
             'timeout' => 30.0,
             'verify' => false,
             'headers' => [
-                'User-Agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124'
+                'User-Agent' => 'BuildForge/1.0'
             ]
         ]);
     }
@@ -32,78 +32,99 @@ class FandomExpedition33Scraper implements ScraperInterface
         $characters = [];
         $targetNames = ['Gustave', 'Lune', 'Sciel', 'Maelle', 'Verso', 'Monoco'];
 
-        // 1. Get the main list of characters
-        // Note: The main page seems to have links. We can also just iterate the known names if the URLs are predictable.
-        // URLs are usually /wiki/Name. Let's try direct access to be more robust against main page layout changes.
+        // 1. Fetch Class Descriptions from the Main "Characters" Page Table
+        // The user wants the specific descriptions from the table on /wiki/Characters
+        $descriptionsMap = $this->getDescriptionsFromListing();
 
         foreach ($targetNames as $name) {
-            sleep(2);
             try {
-                $url = "/wiki/" . $name;
-                $response = $this->client->get($url);
-                $html = (string) $response->getBody();
-
-                $crawler = new Crawler($html);
-
-                // Extract Name (Title)
-                // Fandom title is usually in <h1 id="firstHeading"> or <h1 class="page-header__title">
-                $extractedName = $crawler->filter('h1#firstHeading')->count() > 0
-                    ? $crawler->filter('h1#firstHeading')->text()
-                    : $name;
-
-                // Extract Image
+                // 2. Fetch Image via PageImages API (Keep high-res images)
                 $imageUrl = null;
-                // Try Open Graph image first (most reliable)
-                if ($crawler->filter('meta[property="og:image"]')->count() > 0) {
-                    $imageUrl = $crawler->filter('meta[property="og:image"]')->attr('content');
-                }
-
-                // Fallback to infobox if OG fails
-                if (!$imageUrl) {
-                    $imageNode = $crawler->filter('.portable-infobox .pi-image-thumbnail');
-                    if ($imageNode->count() > 0) {
-                        $imageUrl = $imageNode->attr('src');
-                    }
-                }
-
-                // Extract Description
-                $description = null;
-                // Try Open Graph description first
-                if ($crawler->filter('meta[property="og:description"]')->count() > 0) {
-                    $description = $crawler->filter('meta[property="og:description"]')->attr('content');
-                }
-
-                // Fallback to paragraph extraction
-                if (!$description) {
-                    $paragraphs = $crawler->filter('.mw-parser-output > p');
-                    foreach ($paragraphs as $p) {
-                        $text = trim($p->textContent);
-                        if (!empty($text)) {
-                            $description = $text;
-                            break;
+                $imgResponse = $this->client->get('/api.php', [
+                    'query' => [
+                        'action' => 'query',
+                        'titles' => $name,
+                        'prop' => 'pageimages',
+                        'piprop' => 'original',
+                        'format' => 'json'
+                    ]
+                ]);
+                $imgJson = json_decode((string) $imgResponse->getBody(), true);
+                if (isset($imgJson['query']['pages'])) {
+                    foreach ($imgJson['query']['pages'] as $page) {
+                        if (isset($page['original']['source'])) {
+                            $imageUrl = $page['original']['source'];
                         }
                     }
                 }
 
-                $description = $description ?? "Description unavailable.";
+                // Final fallback if API returns no image
+                if (!$imageUrl) {
+                    $imageUrl = 'https://clair-obscur.fandom.com/wiki/Special:FilePath/' . $name . '.png';
+                }
 
-                // Get Skills (Naive implementation: fetch from Skills page later, or try to find here)
-                // Based on analysis, skills are on a separate page. We will fetch them later or attach them here.
-                // For now, empty skills.
+                // 3. Use Description from Table (or fallback)
+                $description = $descriptionsMap[$name] ?? "Description unavailable.";
 
                 $characters[] = new CharacterDTO(
-                    name: trim($extractedName),
+                    name: $name,
                     imageUrl: $imageUrl,
                     description: $description
                 );
 
             } catch (\Exception $e) {
-                // Log error or ignore
-                echo "Error scraping $name: " . $e->getMessage() . "\n";
+                echo "Error scraping $name via API: " . $e->getMessage() . "\n";
             }
         }
 
         return $characters;
+    }
+
+    private function getDescriptionsFromListing(): array
+    {
+        $map = [];
+        try {
+            $res = $this->client->get('/api.php', [
+                'query' => [
+                    'action' => 'parse',
+                    'page' => 'Characters',
+                    'prop' => 'text',
+                    'format' => 'json'
+                ]
+            ]);
+            $json = json_decode((string) $res->getBody(), true);
+
+            if (isset($json['parse']['text']['*'])) {
+                $crawler = new Crawler($json['parse']['text']['*']);
+
+                // Inspect the first table
+                $crawler->filter('table')->first()->filter('tr')->each(function (Crawler $row) use (&$map) {
+                    $cells = $row->filter('td');
+                    if ($cells->count() >= 6) {
+                        // Col 1 (Index 1) = Name (usually inside a link or just text)
+                        // Col 5 (Index 5) = Description
+                        $nameCell = $cells->eq(1);
+                        $descCell = $cells->eq(5);
+
+                        $name = trim($nameCell->text());
+                        $desc = trim($descCell->text());
+
+                        // Clean up newlines or extra spaces
+                        $desc = preg_replace('/\s+/', ' ', $desc);
+
+                        if (!empty($name) && !empty($desc)) {
+                            // Normalize name match (sometimes "Gustave" vs "Gustave ")
+                            // We know our target names are simple
+                            $map[$name] = $desc;
+                            echo "   [Scraper] Found table desc for $name.\n";
+                        }
+                    }
+                });
+            }
+        } catch (\Exception $e) {
+            echo "   [Scraper] Error fetching listing descriptions: " . $e->getMessage() . "\n";
+        }
+        return $map;
     }
 
     private ?Crawler $skillsPageCrawler = null;
@@ -116,8 +137,7 @@ class FandomExpedition33Scraper implements ScraperInterface
         // Try scraping real skills first (Plan A)
         $skills = $this->scrapeSkillsFromPage($characterName);
 
-        // Plan B: If no skills found (scraping failure or page structure change), generate thematic placeholder skills
-        // so the user can verify the application structure.
+        // Plan B: If no skills found, generate thematic placeholder skills
         if (empty($skills)) {
             echo "  ! No skills scraped for $characterName. Generating placeholders (Plan B)...\n";
             $skills = $this->generatePlaceholderSkills($characterName);
@@ -131,19 +151,35 @@ class FandomExpedition33Scraper implements ScraperInterface
         if ($this->skillsPageCrawler === null) {
             try {
                 echo "Fetching Skills page...\n";
-                $response = $this->client->get('/wiki/Skills');
-                $this->skillsPageCrawler = new Crawler((string) $response->getBody());
+                // Using API for Skills page too? No, keep it simple for now as per "Characters table" request.
+                // Reverting to direct fetch for skills or we can use Parse API as well.
+                // Let's us Parse API for consistency.
+                $response = $this->client->get('/api.php', [
+                    'query' => [
+                        'action' => 'parse',
+                        'page' => 'Skills',
+                        'prop' => 'text',
+                        'format' => 'json'
+                    ]
+                ]);
+                $json = json_decode((string) $response->getBody(), true);
+                if (isset($json['parse']['text']['*'])) {
+                    $this->skillsPageCrawler = new Crawler($json['parse']['text']['*']);
+                }
             } catch (\Exception $e) {
                 echo "Warning: Could not fetch Skills page. " . $e->getMessage() . "\n";
                 return [];
             }
         }
 
+        if (!$this->skillsPageCrawler)
+            return [];
+
         $skills = [];
         $crawler = $this->skillsPageCrawler;
         $headerNode = null;
 
-        // Find H2 with character name
+        // Find H2 with character name (API parse usually returns H2 for section headers)
         $crawler->filter('h2')->each(function (Crawler $node) use ($characterName, &$headerNode) {
             if (stripos($node->text(), $characterName) !== false) {
                 $headerNode = $node->getNode(0);
@@ -165,7 +201,7 @@ class FandomExpedition33Scraper implements ScraperInterface
                 $listCrawler = new Crawler($currentNode);
                 $listCrawler->filter('li')->each(function (Crawler $li) use (&$skills) {
                     $text = $li->text();
-                    $parts = explode(':', $text, 2); // Simple split name: desc
+                    $parts = explode(':', $text, 2);
                     $name = trim($parts[0]);
                     $desc = isset($parts[1]) ? trim($parts[1]) : "Description to be updated.";
 
@@ -189,7 +225,6 @@ class FandomExpedition33Scraper implements ScraperInterface
     private function generatePlaceholderSkills(string $characterName): array
     {
         $skills = [];
-        // Generate 3 basic skills
         $skills[] = new SkillDTO(
             name: "$characterName Strike",
             description: "A signature attack by $characterName.",

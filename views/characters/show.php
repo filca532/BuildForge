@@ -1,12 +1,38 @@
-<div class="character-header" style="display:flex; gap:2rem; align-items:center; margin-bottom:2rem;">
+<div class="character-header" style="
+    display:flex; 
+    gap:4rem; 
+    align-items:center; 
+    margin-bottom:2rem; 
+    padding: 3rem; 
+    background: linear-gradient(rgba(0,0,0,0.8), rgba(0,0,0,0.7)), url('<?= BASE_URL ?>/img/gold_leaf_bg.jpg'); 
+    background-size: cover; 
+    background-position: center;
+    border-radius: 12px;
+    box-shadow: 0 4px 30px rgba(0,0,0,0.5);
+    border: 1px solid rgba(255,215,0, 0.2);
+">
     <?php if (!empty($character['image_url'])): ?>
-        <img src="<?= htmlspecialchars($character['image_url']) ?>" alt="<?= htmlspecialchars($character['name']) ?>"
-            style="border-radius:10px; max-width:300px; box-shadow: 0 0 20px rgba(0,0,0,0.5);">
+        <?php
+        $imgSrc = (strpos($character['image_url'], 'http') === 0)
+            ? $character['image_url']
+            : BASE_URL . '/' . $character['image_url'];
+        ?>
+        <img src="<?= htmlspecialchars($imgSrc) ?>" alt="<?= htmlspecialchars($character['name']) ?>" style="
+                border-radius:50%; 
+                width: 250px; 
+                height: 250px; 
+                object-fit:cover; 
+                box-shadow: 0 0 0 5px rgba(255, 215, 0, 0.3);
+                border: 2px solid var(--primary);
+            ">
     <?php endif; ?>
-    <div>
-        <h1 style="font-size:3rem; margin-bottom:0.5rem;"><?= htmlspecialchars($character['name']) ?></h1>
-        <p style="font-size:1.2rem; opacity:0.8; max-width:800px;">
-            <?= nl2br(htmlspecialchars($character['description'])) ?></p>
+    <div style="flex:1;">
+        <h1
+            style="font-size:3.5rem; margin-bottom:0.5rem; font-family: 'Cinzel', serif; text-shadow: 2px 2px 4px rgba(0,0,0,0.8); color: var(--primary);">
+            <?= htmlspecialchars($character['name']) ?></h1>
+        <p style="font-size:1.3rem; line-height:1.6; color: #e0e0e0; max-width:900px; text-shadow: 1px 1px 2px black;">
+            <?= nl2br(htmlspecialchars($character['description'])) ?>
+        </p>
     </div>
 </div>
 

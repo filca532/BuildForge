@@ -23,10 +23,7 @@ try {
             try {
                 $pdo->exec($stmt);
             } catch (Exception $e) {
-                // Ignore "Database exists" or specific table exists errors if needed, 
-                // but our script usually drops tables.
-                // However, creating database might fail inside exec if active transaction, but here it is fresh.
-                // Or if 'USE' command fails.
+                // Ignore "Database exists" warnings
                 echo "Warning during SQL exec: " . $e->getMessage() . "\n";
             }
         }
@@ -37,13 +34,17 @@ try {
     die("Database Initialization Error: " . $e->getMessage());
 }
 
-// 2. Scrape and Save Data
+use BuildForge\Services\ImageService;
+
+// ...
+
 try {
     // Assuming Game 1 is created by structure.sql (Expedition 33)
     $GAME_ID = 1;
 
-    echo "Starting Scraping...\n";
+    echo "Starting Scraping (Live from Fandom API)...\n";
     $scraper = new FandomExpedition33Scraper();
+    $imageService = new ImageService();
     $characterModel = new Character();
     $skillModel = new Skill();
 
@@ -52,13 +53,17 @@ try {
     foreach ($characters as $charDTO) {
         echo "Processing {$charDTO->name}...\n";
 
-        // Save Character
-        $charId = $characterModel->save($charDTO->name, $charDTO->imageUrl, $charDTO->description, $GAME_ID);
+        // Download and Convert Image
+        $localImagePath = $imageService->processImage($charDTO->imageUrl, $charDTO->name);
+
+        // Save Character with Local Image Path
+        $charId = $characterModel->save($charDTO->name, $localImagePath, $charDTO->description, $GAME_ID);
         echo "  - Saved Character ID: $charId\n";
+        echo "  - Image Path: {$localImagePath}\n";
+        echo "  - Desc Preview: " . substr($charDTO->description, 0, 50) . "...\n";
+
 
         // Get Skills
-        // Note: The original scraper getSkills($charName) logic might need review if it was generating randoms.
-        // Assuming it works as per previous state.
         $skills = $scraper->getSkills($charDTO->name);
         echo "  - Found " . count($skills) . " skills.\n";
 
