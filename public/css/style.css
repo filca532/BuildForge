@@ -1,0 +1,331 @@
+/* =============================================
+   BuildForge - Main Stylesheet
+   ============================================= */
+
+/* CSS Variables */
+:root {
+   --primary: #d68a28;
+   --primary-light: #e9a84a;
+   --primary-dark: #b06b18;
+   --secondary: #faedcd;
+   --gold: #c9a227;
+   --gold-light: #e6c84a;
+   --dark: #1a1a1d;
+   --darker: #0f0f10;
+   --darkest: #080809;
+   --text: #e8e8e8;
+   --text-muted: #a0a0a0;
+}
+
+/* Reset & Base */
+* {
+   box-sizing: border-box;
+}
+
+body {
+   font-family: "Outfit", "Segoe UI", sans-serif;
+   background: linear-gradient(180deg, #0a0a0b 0%, #111113 50%, #0a0a0b 100%);
+   background-attachment: fixed;
+   color: var(--text);
+   margin: 0;
+   padding: 0;
+   line-height: 1.6;
+   min-height: 100vh;
+}
+
+/* =============================================
+   Header
+   ============================================= */
+header {
+   position: relative;
+   background-size: 100% 100%;
+   background-position: center;
+   background-repeat: no-repeat;
+   padding: 2rem 3rem;
+   display: flex;
+   justify-content: space-between;
+   align-items: center;
+   min-height: 100px;
+   filter: drop-shadow(0 4px 20px rgba(0, 0, 0, 0.8));
+}
+
+header::after {
+   content: "";
+   position: absolute;
+   bottom: -20px;
+   left: 50%;
+   transform: translateX(-50%);
+   width: 60%;
+   height: 20px;
+   background: linear-gradient(to bottom, rgba(0, 0, 0, 0.5), transparent);
+   pointer-events: none;
+}
+
+/* Logo */
+.logo h2 {
+   margin: 0;
+   font-family: "Cinzel", serif;
+   font-size: 1.8rem;
+   color: #fff;
+   text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
+   letter-spacing: 2px;
+}
+
+.logo span {
+   font-size: 0.7em;
+   color: var(--gold);
+   font-weight: 400;
+}
+
+/* =============================================
+   Navigation
+   ============================================= */
+nav {
+   display: flex;
+   align-items: center;
+   gap: 0.5rem;
+}
+
+nav a {
+   color: var(--text);
+   text-decoration: none;
+   font-weight: 500;
+   font-size: 0.95rem;
+   padding: 0.6rem 1.2rem;
+   transition: all 0.3s ease;
+   border-radius: 4px;
+   text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
+}
+
+nav a:hover {
+   color: var(--primary-light);
+   background: rgba(214, 138, 40, 0.1);
+}
+
+/* =============================================
+   Buttons
+   ============================================= */
+.btn {
+   display: inline-block;
+   position: relative;
+   background-size: 100% 100%;
+   background-position: center;
+   background-repeat: no-repeat;
+   color: #fff !important;
+   padding: 0.7rem 1.5rem;
+   text-decoration: none;
+   font-family: "Cinzel", serif;
+   font-weight: 600;
+   font-size: 0.9rem;
+   text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.8);
+   transition: all 0.3s ease;
+   border: none;
+   cursor: pointer;
+   min-width: 120px;
+   text-align: center;
+}
+
+.btn:hover {
+   transform: scale(1.05);
+   filter: brightness(1.2);
+   color: var(--gold-light) !important;
+}
+
+.btn-danger {
+   background-size: 100% 100%;
+   background-position: center;
+   background-repeat: no-repeat;
+}
+
+.btn-danger:hover {
+   transform: scale(1.05);
+   filter: brightness(1.2);
+}
+
+/* =============================================
+   Layout
+   ============================================= */
+.container {
+   max-width: 1300px;
+   margin: 3rem auto;
+   padding: 0 2rem;
+}
+
+/* =============================================
+   Typography
+   ============================================= */
+h1,
+h2,
+h3 {
+   font-family: "Cinzel", serif;
+   color: var(--primary);
+   text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.6);
+}
+
+h1 {
+   font-size: 2.8rem;
+   text-align: center;
+   margin-bottom: 0.5rem;
+   background: linear-gradient(
+      135deg,
+      var(--gold-light) 0%,
+      var(--primary) 50%,
+      var(--gold) 100%
+   );
+   -webkit-background-clip: text;
+   -webkit-text-fill-color: transparent;
+   background-clip: text;
+}
+
+/* =============================================
+   Grid System
+   ============================================= */
+.grid {
+   display: grid;
+   grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+   gap: 2.5rem;
+   padding: 1rem 0;
+}
+
+/* =============================================
+   Cards
+   ============================================= */
+.card {
+   position: relative;
+   background-size: 106% 114%;
+   background-position: center;
+   background-repeat: no-repeat;
+   background-color: var(--darker);
+   border-radius: 0;
+   overflow: visible;
+   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+   transition: all 0.4s ease;
+   padding: 1.5rem;
+}
+
+.card::before {
+   content: "";
+   position: absolute;
+   top: 10px;
+   right: 10px;
+   width: 60px;
+   height: 60px;
+   background-size: contain;
+   background-repeat: no-repeat;
+   opacity: 0.5;
+   pointer-events: none;
+   transition: opacity 0.3s ease;
+}
+
+.card:hover {
+   transform: translateY(-8px);
+   box-shadow: 0 12px 40px rgba(214, 138, 40, 0.2);
+}
+
+.card:hover::before {
+   opacity: 0.8;
+}
+
+.card img {
+   width: calc(100% + 1rem);
+   margin: -0.5rem -0.5rem 1rem -0.5rem;
+   height: 220px;
+   object-fit: cover;
+   border: 2px solid rgba(100, 80, 50, 0.5);
+   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+}
+
+.card-body {
+   padding: 0.5rem;
+}
+
+.card-body h3 {
+   margin: 0 0 0.8rem 0;
+   color: #fff;
+   font-size: 1.4rem;
+}
+
+.card-body p {
+   color: var(--text-muted);
+   font-size: 0.95rem;
+   line-height: 1.5;
+}
+
+/* =============================================
+   Footer
+   ============================================= */
+footer {
+   text-align: center;
+   padding: 2.5rem 2rem;
+   background: linear-gradient(180deg, transparent 0%, var(--darkest) 30%);
+   margin-top: 4rem;
+   font-size: 0.9rem;
+   color: var(--text-muted);
+   border-top: 1px solid rgba(214, 138, 40, 0.2);
+}
+
+footer::before {
+   content: "";
+   display: block;
+   width: 150px;
+   height: 10px;
+   margin: 0 auto 1.5rem;
+   background-size: contain;
+   background-repeat: no-repeat;
+   background-position: center;
+   opacity: 0.5;
+}
+
+/* =============================================
+   Scrollbar
+   ============================================= */
+::-webkit-scrollbar {
+   width: 10px;
+}
+
+::-webkit-scrollbar-track {
+   background: var(--darker);
+}
+
+::-webkit-scrollbar-thumb {
+   background: linear-gradient(
+      180deg,
+      var(--primary-dark) 0%,
+      var(--dark) 100%
+   );
+   border-radius: 5px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+   background: var(--primary);
+}
+
+/* Selection */
+::selection {
+   background: rgba(214, 138, 40, 0.3);
+   color: #fff;
+}
+
+/* =============================================
+   Responsive Design
+   ============================================= */
+@media (max-width: 768px) {
+   header {
+      flex-direction: column;
+      gap: 1rem;
+      padding: 1.5rem;
+   }
+
+   nav {
+      flex-wrap: wrap;
+      justify-content: center;
+   }
+
+   h1 {
+      font-size: 2rem;
+   }
+
+   .grid {
+      grid-template-columns: 1fr;
+   }
+}

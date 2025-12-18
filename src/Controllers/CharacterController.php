@@ -3,6 +3,8 @@
 namespace BuildForge\Controllers;
 
 use BuildForge\Models\Character;
+use BuildForge\Models\Skill;
+use BuildForge\Models\Weapon;
 
 class CharacterController extends Controller
 {
@@ -29,13 +31,22 @@ class CharacterController extends Controller
             return;
         }
 
-        $skillModel = new \BuildForge\Models\Skill();
+        $skillModel = new Skill();
         $skills = $skillModel->getByCharacterId((int) $id);
+
+        $weaponModel = new Weapon();
+        $weapons = $weaponModel->getByCharacter((int) $id);
+
+        // Get active tab from query param, default to 'skills'
+        $activeTab = $_GET['tab'] ?? 'skills';
 
         $this->render('characters/show', [
             'title' => $character['name'],
             'character' => $character,
-            'skills' => $skills
+            'skills' => $skills,
+            'weapons' => $weapons,
+            'activeTab' => $activeTab
         ]);
     }
 }
+

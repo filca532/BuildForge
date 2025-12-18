@@ -5,108 +5,45 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?= $title ?? 'BuildForge' ?> | Expedition 33</title>
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Outfit:wght@300;400;500;600&display=swap"
+        rel="stylesheet">
+
+    <!-- Main Stylesheet -->
+    <link rel="stylesheet" href="<?= BASE_URL ?>/css/style.css">
+
+    <!-- Dynamic styles that require PHP -->
     <style>
-        :root {
-            --primary: #d4a373;
-            --secondary: #faedcd;
-            --dark: #1a1a1d;
-            --darker: #0f0f10;
-            --text: #e1e1e1;
-        }
-
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: var(--dark);
-            color: var(--text);
-            margin: 0;
-            padding: 0;
-            line-height: 1.6;
-        }
-
         header {
-            background-color: var(--darker);
-            padding: 1rem 2rem;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            border-bottom: 2px solid var(--primary);
-        }
-
-        nav a {
-            color: var(--text);
-            text-decoration: none;
-            margin-left: 1.5rem;
-            font-weight: 500;
-            transition: color 0.3s;
-        }
-
-        nav a:hover {
-            color: var(--primary);
-        }
-
-        .container {
-            max-width: 1200px;
-            margin: 2rem auto;
-            padding: 0 1rem;
-        }
-
-        h1,
-        h2,
-        h3 {
-            color: var(--primary);
+            background-image: url('<?= BASE_URL ?>/img/E33/Header Frame-min.webp');
         }
 
         .btn {
-            display: inline-block;
-            background: var(--primary);
-            color: var(--darker);
-            padding: 0.5rem 1rem;
-            text-decoration: none;
-            border-radius: 4px;
-            font-weight: bold;
-            transition: opacity 0.3s;
+            background-image: url('<?= BASE_URL ?>/img/E33/COE33_generic_btn.webp');
         }
 
-        .btn:hover {
-            opacity: 0.9;
-        }
-
-        /* Grid for cards */
-        .grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-            gap: 2rem;
+        h1::after {
+            background-image: url('<?= BASE_URL ?>/img/E33/Lead the members Line.webp');
         }
 
         .card {
-            background: var(--darker);
-            border-radius: 8px;
-            overflow: hidden;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
-            transition: transform 0.3s;
+            background-image: url('<?= BASE_URL ?>/img/E33/COE33_box_form.webp');
         }
 
-        .card:hover {
-            transform: translateY(-5px);
+        .card::before {
+            background-image: url('<?= BASE_URL ?>/img/E33/COE33_top_corner_lines.webp');
         }
 
-        .card img {
-            width: 100%;
-            height: 200px;
-            object-fit: cover;
+        footer::before {
+            background-image: url('<?= BASE_URL ?>/img/E33/Lead the members Line.webp');
         }
 
-        .card-body {
-            padding: 1rem;
-        }
-
-        footer {
-            text-align: center;
-            padding: 2rem;
-            background: var(--darker);
-            margin-top: 3rem;
-            font-size: 0.9rem;
-            opacity: 0.7;
+        .btn-danger {
+            background-image: url('<?= BASE_URL ?>/img/E33/COE33_generic_btn_red.webp');
         }
     </style>
 </head>
@@ -115,12 +52,13 @@
 
     <header>
         <div class="logo">
-            <h2 style="margin:0;">BuildForge <span style="font-size:0.8em; color:var(--secondary)">Obsidian</span></h2>
+            <h2>BuildForge <span>Obsidian</span></h2>
         </div>
         <nav>
             <a href="<?= BASE_URL ?>/">Home</a>
             <a href="<?= BASE_URL ?>/characters">Characters</a>
             <a href="<?= BASE_URL ?>/builds">My Builds</a>
+            <a href="<?= BASE_URL ?>/admin/migrate" class="btn btn-danger">Reset Data</a>
             <?php if (isset($_SESSION['user_id'])): ?>
                 <a href="<?= BASE_URL ?>/logout" class="btn">Logout</a>
             <?php else: ?>

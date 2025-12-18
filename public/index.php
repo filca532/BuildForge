@@ -7,6 +7,7 @@ use BuildForge\Controllers\HomeController;
 use BuildForge\Controllers\CharacterController;
 use BuildForge\Controllers\BuildController;
 use BuildForge\Controllers\AuthController;
+use BuildForge\Controllers\AdminController;
 
 // Detect Base URL
 $scriptName = $_SERVER['SCRIPT_NAME']; // e.g., /BuildForge/public/index.php
@@ -29,6 +30,9 @@ $router->post('/builds/delete', [BuildController::class, 'delete']);
 $router->get('/login', [AuthController::class, 'login']);
 $router->post('/login/store', [AuthController::class, 'attemptLogin']);
 $router->get('/logout', [AuthController::class, 'logout']);
+
+// Admin Routes
+$router->get('/admin/migrate', [AdminController::class, 'migrate']);
 
 // API Routes
 $router->get('/api/builds/top-rated', [\BuildForge\Controllers\ApiController::class, 'topRated']);
