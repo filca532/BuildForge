@@ -10,9 +10,8 @@ class WeaponDTO
         public ?string $imageUrl = null,
         public array $usableBy = [],         // ['Gustave', 'Verso'] for shared weapons
         public ?int $attack = null,          // Power stat
-        public ?string $element = null,      // "Fire", "Void", "Physical", etc.
-        public ?string $elementIconUrl = null, // URL to element icon
-        public ?array $scaling = null        // ["Vit" => "B", "Def" => "A", "Agi" => null, "Luck" => "S"]
+        public array $elements = [],         // [['name' => 'Fire', 'icon' => 'url']]
+        public ?array $scaling = null        // ["Vit" => "B", "Def" => "A"]
     ) {
     }
 }

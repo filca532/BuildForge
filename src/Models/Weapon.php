@@ -22,23 +22,18 @@ class Weapon
         ?string $description,
         ?string $imageUrl,
         int $gameId = 1,
-        ?int $attack = null,
-        ?int $elementId = null,
-        ?array $scaling = null
+        ?int $attack = null
     ): int {
-        $scalingJson = $scaling ? json_encode($scaling) : null;
 
         $stmt = $this->pdo->prepare("
-            INSERT INTO weapons (game_id, name, description, image_url, attack, element_id, scaling) 
-            VALUES (?, ?, ?, ?, ?, ?, ?)
+            INSERT INTO weapons (game_id, name, description, image_url, attack) 
+            VALUES (?, ?, ?, ?, ?)
             ON DUPLICATE KEY UPDATE 
                 description = VALUES(description), 
                 image_url = VALUES(image_url), 
-                attack = VALUES(attack),
-                element_id = VALUES(element_id),
-                scaling = VALUES(scaling)
+                attack = VALUES(attack)
         ");
-        $stmt->execute([$gameId, $name, $description, $imageUrl, $attack, $elementId, $scalingJson]);
+        $stmt->execute([$gameId, $name, $description, $imageUrl, $attack]);
 
         if ($stmt->rowCount() > 0 && $this->pdo->lastInsertId() > 0) {
             return (int) $this->pdo->lastInsertId();
@@ -48,6 +43,37 @@ class Weapon
         $stmt = $this->pdo->prepare("SELECT id FROM weapons WHERE name = ? AND game_id = ?");
         $stmt->execute([$name, $gameId]);
         return (int) $stmt->fetchColumn();
+    }
+
+    public function addElement(int $weaponId, int $elementId): void
+    {
+        $stmt = $this->pdo->prepare("INSERT IGNORE INTO weapon_elements (weapon_id, element_id) VALUES (?, ?)");
+        $stmt->execute([$weaponId, $elementId]);
+    }
+
+    public function getOrCreateStat(string $code, string $name, int $gameId = 1): int
+    {
+        $stmt = $this->pdo->prepare("SELECT id FROM stats WHERE code = ? AND game_id = ?");
+        $stmt->execute([$code, $gameId]);
+        $id = $stmt->fetchColumn();
+
+        if ($id) {
+            return (int) $id;
+        }
+
+        $stmt = $this->pdo->prepare("INSERT INTO stats (game_id, name, code) VALUES (?, ?, ?)");
+        $stmt->execute([$gameId, $name, $code]);
+        return (int) $this->pdo->lastInsertId();
+    }
+
+    public function addScaling(int $weaponId, int $statId, string $grade): void
+    {
+        $stmt = $this->pdo->prepare("
+            INSERT INTO weapon_scalings (weapon_id, stat_id, grade) 
+            VALUES (?, ?, ?)
+            ON DUPLICATE KEY UPDATE grade = VALUES(grade)
+        ");
+        $stmt->execute([$weaponId, $statId, $grade]);
     }
 
     /**
@@ -97,9 +123,8 @@ class Weapon
     public function getByCharacter(int $characterId): array
     {
         $stmt = $this->pdo->prepare("
-            SELECT w.*, e.name as element_name, e.icon_url as element_icon, e.color as element_color
+            SELECT w.*
             FROM weapons w
-            LEFT JOIN elements e ON w.element_id = e.id
             INNER JOIN character_weapons cw ON w.id = cw.weapon_id
             WHERE cw.character_id = ?
             ORDER BY w.name ASC
@@ -107,28 +132,77 @@ class Weapon
         $stmt->execute([$characterId]);
         $weapons = $stmt->fetchAll();
 
-        // Decode scaling JSON
-        foreach ($weapons as &$weapon) {
-            if ($weapon['scaling']) {
-                $weapon['scaling'] = json_decode($weapon['scaling'], true);
-            }
-        }
-        return $weapons;
+        return $this->attachAllData($weapons);
     }
 
     public function getAll(): array
     {
-        $stmt = $this->pdo->query("
-            SELECT w.*, e.name as element_name, e.icon_url as element_icon, e.color as element_color
-            FROM weapons w
-            LEFT JOIN elements e ON w.element_id = e.id
-            ORDER BY w.name ASC
-        ");
+        $stmt = $this->pdo->query("SELECT * FROM weapons ORDER BY name ASC");
         $weapons = $stmt->fetchAll();
 
+        return $this->attachAllData($weapons);
+    }
+
+    private function attachAllData(array $weapons): array
+    {
+        if (empty($weapons))
+            return [];
+
+        $weapons = $this->attachScalings($weapons);
+        $weapons = $this->attachElements($weapons);
+
+
+        return $weapons;
+    }
+
+    private function attachElements(array $weapons): array
+    {
+        $weaponIds = array_column($weapons, 'id');
+        $placeholders = implode(',', array_fill(0, count($weaponIds), '?'));
+
+        $stmt = $this->pdo->prepare("
+            SELECT we.weapon_id, e.name, e.icon_url, e.color
+            FROM weapon_elements we
+            JOIN elements e ON we.element_id = e.id
+            WHERE we.weapon_id IN ($placeholders)
+        ");
+        $stmt->execute($weaponIds);
+        $elements = $stmt->fetchAll(PDO::FETCH_GROUP);
+
         foreach ($weapons as &$weapon) {
-            if ($weapon['scaling']) {
-                $weapon['scaling'] = json_decode($weapon['scaling'], true);
+            $weapon['elements'] = isset($elements[$weapon['id']]) ? $elements[$weapon['id']] : [];
+            // For backward compatibility with View (singular assumption if any)
+            $first = $weapon['elements'][0] ?? null;
+            $weapon['element_name'] = $first['name'] ?? null;
+            $weapon['element_icon'] = $first['icon_url'] ?? null;
+            $weapon['element_color'] = $first['color'] ?? null;
+        }
+        return $weapons;
+    }
+
+
+
+    private function attachScalings(array $weapons): array
+    {
+        // ... previous implementation ...
+        $weaponIds = array_column($weapons, 'id');
+        $placeholders = implode(',', array_fill(0, count($weaponIds), '?'));
+
+        $stmt = $this->pdo->prepare("
+            SELECT ws.weapon_id, s.name as stat_name, s.code as stat_code, ws.grade
+            FROM weapon_scalings ws
+            JOIN stats s ON ws.stat_id = s.id
+            WHERE ws.weapon_id IN ($placeholders)
+        ");
+        $stmt->execute($weaponIds);
+        $scalings = $stmt->fetchAll(PDO::FETCH_GROUP);
+
+        foreach ($weapons as &$weapon) {
+            $weapon['scaling'] = [];
+            if (isset($scalings[$weapon['id']])) {
+                foreach ($scalings[$weapon['id']] as $scale) {
+                    $weapon['scaling'][$scale['stat_name']] = $scale['grade'];
+                }
             }
         }
         return $weapons;

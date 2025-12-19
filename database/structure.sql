@@ -12,6 +12,10 @@ DROP TABLE IF EXISTS character_accessories;
 DROP TABLE IF EXISTS character_weapons;
 DROP TABLE IF EXISTS accessories;
 DROP TABLE IF EXISTS accessory_categories;
+DROP TABLE IF EXISTS weapon_elements;
+DROP TABLE IF EXISTS weapon_has_types;
+DROP TABLE IF EXISTS weapon_scalings;
+DROP TABLE IF EXISTS stats;
 DROP TABLE IF EXISTS weapons;
 DROP TABLE IF EXISTS weapon_types;
 DROP TABLE IF EXISTS elements;
@@ -100,34 +104,47 @@ CREATE TABLE elements (
     UNIQUE KEY unique_element_per_game (game_id, name)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
--- 8. Weapon Types Table (Swords, Guns, Staves, etc. - per game)
-CREATE TABLE weapon_types (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    game_id INT NOT NULL,
-    name VARCHAR(100) NOT NULL,
-    description TEXT,
-    icon_url VARCHAR(255),
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (game_id) REFERENCES games(id) ON DELETE CASCADE,
-    UNIQUE KEY unique_weapon_type_per_game (game_id, name)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-
 -- 9. Weapons Table (Enhanced with element FK and JSON scaling)
 CREATE TABLE weapons (
     id INT AUTO_INCREMENT PRIMARY KEY,
     game_id INT NOT NULL,
-    weapon_type_id INT NULL,
-    element_id INT NULL,             -- FK to elements table
     name VARCHAR(100) NOT NULL,
     description TEXT,
     image_url VARCHAR(255),
     attack INT NULL,                 -- Power stat from wiki
-    scaling JSON NULL,               -- {"Vit": "B", "Def": "A", "Agi": null, "Luck": "S"}
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (game_id) REFERENCES games(id) ON DELETE CASCADE,
-    FOREIGN KEY (weapon_type_id) REFERENCES weapon_types(id) ON DELETE SET NULL,
-    FOREIGN KEY (element_id) REFERENCES elements(id) ON DELETE SET NULL,
     UNIQUE KEY unique_weapon_per_game (game_id, name)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- 10. Stats Table (Vit, Def, Agi, Luck, etc.)
+CREATE TABLE stats (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    game_id INT NOT NULL,
+    name VARCHAR(50) NOT NULL,
+    code VARCHAR(10) NOT NULL,       -- e.g. "VIT", "DEF"
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (game_id) REFERENCES games(id) ON DELETE CASCADE,
+    UNIQUE KEY unique_stat_per_game (game_id, code)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- 11. Weapon Scaling Pivot Table (Many-to-Many)
+CREATE TABLE weapon_scalings (
+    weapon_id INT NOT NULL,
+    stat_id INT NOT NULL,
+    grade VARCHAR(5) NOT NULL,       -- "S", "A", "B", "C", "D"
+    PRIMARY KEY (weapon_id, stat_id),
+    FOREIGN KEY (weapon_id) REFERENCES weapons(id) ON DELETE CASCADE,
+    FOREIGN KEY (stat_id) REFERENCES stats(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- 12. Weapon Elements Pivot Table (Many-to-Many)
+CREATE TABLE weapon_elements (
+    weapon_id INT NOT NULL,
+    element_id INT NOT NULL,
+    PRIMARY KEY (weapon_id, element_id),
+    FOREIGN KEY (weapon_id) REFERENCES weapons(id) ON DELETE CASCADE,
+    FOREIGN KEY (element_id) REFERENCES elements(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- 9. Character-Weapons Junction Table (Many-to-Many for shared weapons like Gustave/Verso)

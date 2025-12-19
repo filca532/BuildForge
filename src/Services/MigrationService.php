@@ -130,30 +130,46 @@ class MigrationService
                     $localImagePath = $imageService->processImage($weaponDTO->imageUrl, $weaponDTO->name, 'weapons');
                 }
 
-                // Process element (get or create, download icon)
-                $elementId = null;
-                if ($weaponDTO->element && !empty(trim($weaponDTO->element))) {
-                    $localElementIcon = null;
-                    if ($weaponDTO->elementIconUrl) {
-                        $localElementIcon = $imageService->processImage(
-                            $weaponDTO->elementIconUrl,
-                            'element_' . strtolower(str_replace(' ', '_', $weaponDTO->element)),
-                            'elements'
-                        );
-                    }
-                    $elementId = $weaponModel->getOrCreateElement($weaponDTO->element, $localElementIcon, $GAME_ID);
-                }
-
-                // Save weapon with full stats
+                // Save weapon (core)
                 $weaponId = $weaponModel->save(
                     $weaponDTO->name,
                     $weaponDTO->description,
                     $localImagePath,
                     $GAME_ID,
-                    $weaponDTO->attack,
-                    $elementId,
-                    $weaponDTO->scaling
+                    $weaponDTO->attack
                 );
+
+                // Save Elements (Many-to-Many)
+                if (!empty($weaponDTO->elements)) {
+                    foreach ($weaponDTO->elements as $elementData) {
+                        $elemName = $elementData['name'];
+                        $elemIconUrl = $elementData['icon'] ?? null;
+
+                        $localElementIcon = null;
+                        if ($elemIconUrl) {
+                            $localElementIcon = $imageService->processImage(
+                                $elemIconUrl,
+                                'element_' . strtolower(str_replace(' ', '_', $elemName)),
+                                'elements'
+                            );
+                        }
+
+                        $elementId = $weaponModel->getOrCreateElement($elemName, $localElementIcon, $GAME_ID);
+                        $weaponModel->addElement($weaponId, $elementId);
+                    }
+                }
+
+                // Save Scaling (Many-to-Many)
+                if (!empty($weaponDTO->scaling)) {
+                    foreach ($weaponDTO->scaling as $statCode => $grade) {
+                        if ($grade) { // Only save if grade exists
+                            // Map generic scraping codes to standard names if needed, or just use Code as Name
+                            // Scraper gives 'Vit', 'Def', 'Agi', 'Luck'
+                            $statId = $weaponModel->getOrCreateStat(strtoupper($statCode), $statCode, $GAME_ID);
+                            $weaponModel->addScaling($weaponId, $statId, $grade);
+                        }
+                    }
+                }
 
                 // Link to characters (handles Gustave/Verso sharing)
                 foreach ($weaponDTO->usableBy as $charName) {

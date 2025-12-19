@@ -499,14 +499,22 @@ class FandomExpedition33Scraper implements ScraperInterface
                                 $href = str_replace(['\"', "\'"], '', $href);
                                 $wikiUrl = self::BASE_URL . $href;
 
+                                // Prepare elements array
+                                $elements = [];
+                                if ($element) {
+                                    $elements[] = [
+                                        'name' => $element,
+                                        'icon' => $elementIconUrl
+                                    ];
+                                }
+
                                 $weapons[] = new WeaponDTO(
                                     name: $weaponName,
                                     description: null,
                                     imageUrl: $weaponIconUrl,
                                     usableBy: $characters,
                                     attack: $power,
-                                    element: $element,
-                                    elementIconUrl: $elementIconUrl,
+                                    elements: $elements,
                                     scaling: $scaling
                                 );
                             }
